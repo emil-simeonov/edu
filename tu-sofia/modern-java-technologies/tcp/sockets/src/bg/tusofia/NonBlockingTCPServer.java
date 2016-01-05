@@ -82,4 +82,8 @@ public class NonBlockingTCPServer implements ITCPServer {
             buffer.clear();
         }
     }
+
+    public static void main(String[] argv) throws IOException {
+        new NonBlockingTCPServer(ITCPServer.DEFAULT_PORT).startServer();
+    }
 }

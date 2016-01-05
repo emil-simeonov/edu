@@ -16,21 +16,9 @@ public class TCPClient {
         try {
             s = new Socket(InetAddress.getLocalHost(), ITCPServer.DEFAULT_PORT);
             writer = new PrintWriter(s.getOutputStream());
+            sendRequest(writer);
             reader = new BufferedReader(new InputStreamReader(s.getInputStream()));
-            writer.println("Hello world!");
-            writer.println();
-            writer.flush();
-            StringBuilder response = new StringBuilder();
-            String line;
-            while ((line = reader.readLine()) != null) {
-                line = line.trim();
-                if (line.isEmpty()) {
-                    // new line or any "empty" line should terminate further reading from the socket
-                    break;
-                }
-                response.append(line.trim());
-            }
-            return response.toString();
+            return processResponse(reader);
         } finally {
             if (writer != null) {
                 writer.close();
@@ -42,6 +30,27 @@ public class TCPClient {
                 s.close();
             }
         }
+    }
+
+    private String processResponse(BufferedReader reader) throws IOException {
+        StringBuilder response = new StringBuilder();
+        String line;
+        while ((line = reader.readLine()) != null) {
+            line = line.trim();
+            if (line.isEmpty()) {
+                // new line or any "empty" line should terminate further reading from the socket
+                break;
+            }
+            response.append(line.trim());
+        }
+        return response.toString();
+    }
+
+    private void sendRequest(PrintWriter writer) {
+        writer.println("Hello world!");
+        // We use a new line to terminate the message
+        writer.println();
+        writer.flush();
     }
 
     public static void main(String[] argv) throws IOException {

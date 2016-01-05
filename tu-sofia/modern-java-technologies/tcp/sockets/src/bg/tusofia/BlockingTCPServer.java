@@ -48,7 +48,7 @@ public class BlockingTCPServer implements ITCPServer {
     }
 
     private void sendResponse(PrintWriter writer, String input) throws IOException {
-        writer.println(new StringBuilder("Working with blocking sockets... ").append(input));
+        writer.println("Blocking sockets server... " + input);
         writer.flush();
     }
 
@@ -64,5 +64,9 @@ public class BlockingTCPServer implements ITCPServer {
             input.append(line).append("\n");
         }
         return input.toString();
+    }
+
+    public static void main(String[] argv) throws IOException {
+        new BlockingTCPServer(ITCPServer.DEFAULT_PORT).startServer();
     }
 }
