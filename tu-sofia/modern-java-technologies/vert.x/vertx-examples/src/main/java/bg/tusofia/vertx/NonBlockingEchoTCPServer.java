@@ -5,7 +5,18 @@ import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Vertx;
 import io.vertx.core.streams.Pump;
 
-// We extend the abstract verticle, so we could add this service to a message bus, if necessary.
+/**
+ * This class is a very simple non-blocking TCP echo server (it sends back all of the input AS IS to any given client).
+ * The general idea of this example is to demonstrate how we could quickly implement any server as Verticals managed by
+ * the vert.x platform.
+ * <p>
+ * Verticals are the building block of vert.x-based applications. They could be dynamically deployed at any point of
+ * time. They could also interact with other verticals via the vert.x Message Bus. Verticals are reactive in the sense
+ * that they are active only when processing a vert.x event. For example, the incoming TCP connection on port
+ * TCPConstants.DEFAULT_PORT triggers a vert.x event, which is then handled and processed by the anonymous connect
+ * handler below. Last but not least, each Vertical is guaranteed to always run in one and the same thread. This is all
+ * managed by vert.x.
+ */
 public class NonBlockingEchoTCPServer extends AbstractVerticle {
     public static void main(String[] argv) throws Exception {
         // Vert.x deployes and uses "verticals". Verticals are event-driven.
