@@ -10,7 +10,7 @@ public class EchoNonBlockingTCPServer extends AbstractVerticle {
     @Override
     public void start() throws Exception {
         // Creates a non-blocking TCP server which registers a handler for incoming connections (anonymous Java function)
-        Vertx.vertx().createNetServer().connectHandler(
+        vertx.createNetServer().connectHandler(
                 sock -> {
                     System.out.println("Processing incoming connection. Pumping out everything...");
                     // Create and start a pump. Instances of this class read items from a {@link ReadStream} and write them to a {@link WriteStream}.
@@ -21,6 +21,8 @@ public class EchoNonBlockingTCPServer extends AbstractVerticle {
     }
 
     public static void main(String[] argv) throws Exception {
-        new EchoNonBlockingTCPServer().start();
+        // Vert.x deployes and uses "verticals". Verticals are event-driven.
+        // New verticals could be deployed at any time - as dynamic as necessary
+        Vertx.vertx().deployVerticle(new EchoNonBlockingTCPServer());
     }
 }
