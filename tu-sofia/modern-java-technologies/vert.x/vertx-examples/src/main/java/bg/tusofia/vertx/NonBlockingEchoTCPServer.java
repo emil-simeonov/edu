@@ -6,7 +6,13 @@ import io.vertx.core.Vertx;
 import io.vertx.core.streams.Pump;
 
 // We extend the abstract verticle, so we could add this service to a message bus, if necessary.
-public class EchoNonBlockingTCPServer extends AbstractVerticle {
+public class NonBlockingEchoTCPServer extends AbstractVerticle {
+    public static void main(String[] argv) throws Exception {
+        // Vert.x deployes and uses "verticals". Verticals are event-driven.
+        // New verticals could be deployed at any time - as dynamic as necessary
+        Vertx.vertx().deployVerticle(new NonBlockingEchoTCPServer());
+    }
+
     @Override
     public void start() throws Exception {
         // Creates a non-blocking TCP server which registers a handler for incoming connections (anonymous Java function)
@@ -18,11 +24,5 @@ public class EchoNonBlockingTCPServer extends AbstractVerticle {
                 }
         ).listen(TCPConstants.DEFAULT_PORT); // binds the server to a given server socket (channel)
         System.out.println("Simple Echo non-blocking TCP server is started.");
-    }
-
-    public static void main(String[] argv) throws Exception {
-        // Vert.x deployes and uses "verticals". Verticals are event-driven.
-        // New verticals could be deployed at any time - as dynamic as necessary
-        Vertx.vertx().deployVerticle(new EchoNonBlockingTCPServer());
     }
 }
