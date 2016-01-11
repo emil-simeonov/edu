@@ -19,6 +19,9 @@ public class PubSubEventBusCommunication {
         vertx.deployVerticle(new Publisher());
     }
 
+    /**
+     * A class that publishes events periodically via the Event Bus.
+     */
     public static class Publisher extends AbstractVerticle {
         @Override
         public void start() throws Exception {
@@ -29,6 +32,9 @@ public class PubSubEventBusCommunication {
         }
     }
 
+    /**
+     * A class that subscribes for a given topic (event source) and processes events when delivered by the Event Bus.
+     */
     public static class Subscriber extends AbstractVerticle {
         @Override
         public void start() throws Exception {
