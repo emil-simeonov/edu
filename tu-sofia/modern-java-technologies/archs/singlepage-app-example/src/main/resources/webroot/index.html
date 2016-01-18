@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SPA with vert.x</title>
+    <script type="text/javascript" src="https://code.jquery.com/jquery-2.2.0.js"></script>
+    <script type="text/javascript"
+            src="https://cdnjs.cloudflare.com/ajax/libs/knockout/3.4.0/knockout-debug.js"></script>
+    <script type="text/javascript">
+        function NamesExecutor() {
+            var self = this;
+            self.addName = function(name, successCb) {
+                var nameObject = ko.toJSON(name);
+                $.ajax({
+                    url: "/api/names",
+                    type: "POST",
+                    dataType: "json",
+                    data: nameObject,
+                    contentType: 'application/json; charset=utf-8',
+                    success: successCb,
+                    error: function(err) {
+                        console.log(err);
+                    }
+                });
+            };
+            self.getNames = function(successCb) {
+                $.ajax({
+                    url: "/api/names",
+                    type: "GET",
+                    dataType: "json",
+                    contentType: 'application/json; charset=utf-8',
+                    success: successCb,
+                    error: function(err) {
+                        console.log(err);
+                    }
+                });
+            };
+        }
+
+        function NameModel(firstName, familyName) {
+            var self = this;
+            self.firstName = ko.observable(firstName || "");
+            self.familyName = ko.observable(familyName || "");
+            self.fullName = ko.computed(function() {
+                return self.firstName() + " " + self.familyName();
+            });
+        }
+
+        function NameVM() {
+            var self = this;
+            var executor = new NamesExecutor();
+            self.name = new NameModel();
+            self.names = ko.observableArray();
+            var getNamesOnSuccess = function(names) {
+                console.log(names);
+                self.names(ko.utils.arrayMap(names, function(nameItem) {
+                    return new NameModel(nameItem.firstName, nameItem.familyName);
+                }));
+            }
+            var getNames = function() {
+                return executor.getNames(getNamesOnSuccess);
+            }
+            var addNameOnSuccess = function(addedName) {
+                getNames();
+            }
+            self.addName = function() {
+                executor.addName(self.name, addNameOnSuccess);
+            };
+        }
+        $(document).ready(function() {
+            ko.applyBindings(new NameVM());
+        });
+
+    </script>
+</head>
+<body>
+<div data-bind="with: name">
+    <label id="first-name-label">First Name</label>
+    <input id="first-name" name="first-name" data-bind="value: firstName">
+    <label id="family-name-label">Family Name</label>
+    <input id="family-name" name="family-name" data-bind="value: familyName">
+    <label id="full-name-label">Full Name</label>
+    <span id="full-name" name="full-name" data-bind="text: fullName"></span>
+</div>
+<button id="submit" data-bind="click: addName">Add name</button>
+<div data-bind="foreach: names">
+    <span data-bind="text: fullName"></span>
+    <br>
+</div>
+</body>
+</html>
