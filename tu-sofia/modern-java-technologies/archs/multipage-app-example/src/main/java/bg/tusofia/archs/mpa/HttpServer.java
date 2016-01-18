@@ -21,11 +21,11 @@ public class HttpServer {
         vertx.deployVerticle(new TemplatesRenderingVertical());
     }
 
-    private static String templatePath(String templateName) {
-        return HTTPConstants.TEMPLATES_DIR + File.separator + templateName + HTTPConstants.TEMPLATE_EXT;
-    }
-
     private static class TemplatesRenderingVertical extends AbstractVerticle {
+        private static String templatePath(String templateName) {
+            return HTTPConstants.TEMPLATES_DIR + File.separator + templateName + HTTPConstants.TEMPLATE_EXT;
+        }
+
         private static void render(HandlebarsTemplateEngine engine, RoutingContext ctx, String templateName) {
             engine.render(ctx, templatePath(templateName), res -> {
                 if (res.succeeded()) {
