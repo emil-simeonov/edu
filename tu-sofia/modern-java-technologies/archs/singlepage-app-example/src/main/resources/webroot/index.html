@@ -66,6 +66,8 @@
             self.addName = function() {
                 executor.addName(self.name, addNameOnSuccess);
             };
+            // Load all of the names initially...
+            getNames();
         }
         $(document).ready(function() {
             ko.applyBindings(new NameVM());
