@@ -10,7 +10,7 @@ import io.vertx.ext.web.templ.HandlebarsTemplateEngine;
 import java.io.File;
 
 /**
- * This class represents an abstract HTTP server providing server-side web page rendering through Handlebars4j.
+ * This class represents a HTTP server providing server-side web page rendering through Handlebars4j.
  * In addition this HTTP server demonstrates how HTTP requests to the root application route ("/", "/index.html") could
  * be handled, as well as concrete resource paths (e.g. "/say-hi"). Last but not least, this example illustrates the
  * basics on HTML form processing.
@@ -21,11 +21,27 @@ public class HttpServer {
         vertx.deployVerticle(new TemplatesRenderingVertical());
     }
 
+    /**
+     * This is a vert.x vertical used for server-side Handlebars templates definition and rendering.
+     */
     private static class TemplatesRenderingVertical extends AbstractVerticle {
+        /**
+         * Dynamically builds the resource path to each template in the "resources/templates" folder.
+         *
+         * @param templateName the name of the template
+         * @return resource path for the passed template name
+         */
         private static String templatePath(String templateName) {
             return HTTPConstants.TEMPLATES_DIR + File.separator + templateName + HTTPConstants.TEMPLATE_EXT;
         }
 
+        /**
+         * Renders Handlebars templates on the server side.
+         * @param engine an instance of the Handlebars engine as part of the Handlebars template engine vert.x module.
+         * @param ctx the routing context that is used to access the HTTP request and response as well as for passing
+         *            passing values for template rendering.
+         * @param templateName the name of the Handlebars template in the "resources/templates" folder
+         */
         private static void render(HandlebarsTemplateEngine engine, RoutingContext ctx, String templateName) {
             engine.render(ctx, templatePath(templateName), res -> {
                 if (res.succeeded()) {
