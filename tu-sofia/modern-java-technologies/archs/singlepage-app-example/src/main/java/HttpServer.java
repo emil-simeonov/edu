@@ -10,6 +10,8 @@ import io.vertx.ext.web.handler.StaticHandler;
 
 /**
  * This class illustrates how a Single Page Application (SPA) could be built on top of vert.x.
+ * It handles static resources (/index.html) and also exposes simple RESTful API consumed by the JavaScript client
+ * application.
  */
 public class HttpServer {
     public static void main(String[] argv) {

@@ -3,12 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <title>SPA with vert.x</title>
+    <!--A client-side JavaScript library mostly used for asynchronous communication with the RESTful vert.x backend via AJAX -->
     <script type="text/javascript" src="https://code.jquery.com/jquery-2.2.0.js"></script>
+    <!--A client-side JavaScript micro-framework used for data-binding between the visualized content and the RESTful
+    vert.x backend -->
     <script type="text/javascript"
             src="https://cdnjs.cloudflare.com/ajax/libs/knockout/3.4.0/knockout-debug.js"></script>
     <script type="text/javascript">
+        // A class (function) responsible for communicating with the vert.x RESTful backend via AJAX.
         function NamesExecutor() {
             var self = this;
+            // Method for creating and adding a new name instance to the list of names maintained by the vert.x backend via AJAX.
+            // Receives a callback function (successCb), which is intended to handle successfull executions. This callback
+            // also receives the JSON response from the vert.x backend. In case of errors, it dumps additional information
+            // in the JavaScript console of your browser. Note that this error handling is simplistic and inefficient in
+            // productive environments. We only use this way in order to to keep the example simple enough.
             self.addName = function(name, successCb) {
                 var nameObject = ko.toJSON(name);
                 $.ajax({
@@ -23,6 +32,11 @@
                     }
                 });
             };
+            // Method for obtaining the list of names maintained by the vert.x backend via AJAX. Receives a callback function (successCb),
+            // which is intended to handle successfull executions. This callback also receives the JSON response from the
+            // vert.x backend. In case of errors, it dumps additional information in the JavaScript console of your
+            // browser. Note that this error handling is simplistic and inefficient in productive environments. We only
+            // use this way in order to to keep the example simple enough.
             self.getNames = function(successCb) {
                 $.ajax({
                     url: "/api/names",
@@ -37,54 +51,82 @@
             };
         }
 
+        // Class for the knockout.js domain Model. It is responsible to declare and instantiate the observables needed
+        // to declare bi-directional data mapping among the corresponding HTML elements and the instances of this model.
         function NameModel(firstName, familyName) {
             var self = this;
+            // Simple observable for a HTML DOM element
             self.firstName = ko.observable(firstName || "");
+            // Simple observable for a HTML DOM element
             self.familyName = ko.observable(familyName || "");
+            // Computed observable based on the values of 2 more observables, i.e. an example of custom data binding.
             self.fullName = ko.computed(function() {
                 return self.firstName() + " " + self.familyName();
             });
         }
 
+        // A knockout.js View Model, which is responsible for defining the "glue" between models and views. It basically
+        // defines the "methods" you could execute upon any given Model or a collection of Model instances.
         function NameVM() {
             var self = this;
+            // Used for isolating the underlying AJAX layer
             var executor = new NamesExecutor();
+            // a property holding an instance of the domain Model
             self.name = new NameModel();
+            // A collection of observable names, i.e. the list of names displayed upon adding a new name.
             self.names = ko.observableArray();
+            // A callback method called when the list of names has been successfully gathered from the server.
+            // Thus it actually maps each and every name in JSON format to concrete observable instances of the Model.
             var getNamesOnSuccess = function(names) {
                 console.log(names);
                 self.names(ko.utils.arrayMap(names, function(nameItem) {
                     return new NameModel(nameItem.firstName, nameItem.familyName);
                 }));
             }
+            // A method returning the list of names delegating to the vert.x backend using AJAX. Passes a callback for
+            // further processing of the JSON response.
             var getNames = function() {
                 return executor.getNames(getNamesOnSuccess);
             }
+            // A callback method called when a new entry has been successfully added to the list of names maintained by
+            // the vert.x backend. It actually retrieves the list of names and thus refreshes the list of observed names.
             var addNameOnSuccess = function(addedName) {
                 getNames();
             }
+            // A method adding a new name to the list maintained by the vert.x backend using AJAX. Passes a callback for
+            // further processing.
             self.addName = function() {
                 executor.addName(self.name, addNameOnSuccess);
             };
             // Load all of the names initially...
             getNames();
         }
+        // Guarantees that jQuery and knpckout.js could be used together.
         $(document).ready(function() {
+            // Activates the bi-directional mappings once the jQuery JavaScript resource has been loaded.
             ko.applyBindings(new NameVM());
         });
 
     </script>
 </head>
 <body>
+<!--Declares which is the used model instance by referencing it as part of the View Model -->
 <div data-bind="with: name">
     <label id="first-name-label">First Name</label>
+    <!--Binds the 'value' attribute of the underlying HTML DOM input element to the firstName observable of the Name model instance -->
     <input id="first-name" name="first-name" data-bind="value: firstName">
     <label id="family-name-label">Family Name</label>
+    <!--Binds the value of the underlying HTML DOM input element to the familyName observable of the Name model instance -->
     <input id="family-name" name="family-name" data-bind="value: familyName">
     <label id="full-name-label">Full Name</label>
+    <!--Binds the 'text' element of the underlying HTML DOM span element to the fullName computed observable of the Name model instance -->
     <span id="full-name" name="full-name" data-bind="text: fullName"></span>
 </div>
+<!--Declarative event handling using knockout.js. The addName method in the bound NameVM instance will be invoked
+each time the "submit" button is pressed.-->
 <button id="submit" data-bind="click: addName">Add name</button>
+<!--Dynamic visual generation of HTML span DOM elements visualizing the "fullName" computed observable of the attached
+domain Model items in the "names" observableArray-->
 <div data-bind="foreach: names">
     <span data-bind="text: fullName"></span>
     <br>
