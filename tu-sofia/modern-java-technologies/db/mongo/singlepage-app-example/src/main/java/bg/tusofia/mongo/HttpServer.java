@@ -72,6 +72,7 @@ public class HttpServer {
                     if (res.failed()) {
                         ctx.fail(res.cause());
                     } else {
+                        newBook.put("author", new JsonObject().put("_id", newBook.getJsonObject("author").getValue("_id")));
                         ctx.response().setStatusCode(201);
                         jsonResponse(ctx, newBook);
                     }
