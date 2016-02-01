@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SPA with vert.x</title>
+    <!--A client-side JavaScript library mostly used for asynchronous communication with the RESTful vert.x backend via AJAX -->
+    <script type="text/javascript" src="https://code.jquery.com/jquery-2.2.0.js"></script>
+    <!--A client-side JavaScript micro-framework used for data-binding between the visualized content and the RESTful
+    vert.x backend -->
+    <script type="text/javascript"
+            src="https://cdnjs.cloudflare.com/ajax/libs/knockout/3.4.0/knockout-debug.js"></script>
+    <script type="text/javascript">
+        function BooksExecutor() {
+            var self = this;
+            self.addBook = function(book, successCb) {
+                var bookAsJson = ko.toJSON(book);
+                $.ajax({
+                    url: "/api/books",
+                    type: "POST",
+                    dataType: "json",
+                    data: bookAsJson,
+                    contentType: 'application/json; charset=utf-8',
+                    success: successCb,
+                    error: function(err) {
+                        console.log(err);
+                    }
+                });
+            };
+            self.getBooks = function(successCb) {
+                $.ajax({
+                    url: "/api/books",
+                    type: "GET",
+                    dataType: "json",
+                    contentType: 'application/json; charset=utf-8',
+                    success: successCb,
+                    error: function(err) {
+                        console.log(err);
+                    }
+                });
+            };
+        }
+
+        function AuthorsExecutor() {
+            var self = this;
+            self.getAuthors = function(successCb) {
+                $.ajax({
+                    url: "/api/authors",
+                    type: "GET",
+                    dataType: "json",
+                    contentType: 'application/json; charset=utf-8',
+                    success: successCb,
+                    error: function(err) {
+                        console.log(err);
+                    }
+                });
+            };
+        }
+
+        function AuthorModel(id, firstName, familyName) {
+            var self = this;
+            self.id = id || "";
+            self.firstName = ko.observable(firstName || "");
+            self.familyName = ko.observable(familyName || "");
+            self.fullName = ko.computed(function() {
+                return self.firstName() + " " + self.familyName();
+            });
+        }
+
+        function BookModel(id, isbn, name, author) {
+            var self = this;
+            self.id = id || "";
+            self.isbn = ko.observable(isbn || "");
+            self.name = ko.observable(name || "");
+            self.author = author || new AuthorModel();
+            self.bookDetails = ko.computed(function() {
+                return self.author.firstName() + " " + self.author.familyName() + ", " + self.name() + ", ISBN: " + self.isbn();
+            });
+        }
+
+        function BookVM() {
+            var self = this;
+            self.book = new BookModel();
+            self.books = ko.observableArray();
+            self.authors = ko.observableArray();
+            self.selectedAuthor = ko.observable();
+
+            var booksExecutor = new BooksExecutor();
+            var authorsExecutor = new AuthorsExecutor();
+            var getBooksOnSuccess = function(books) {
+                console.log(books);
+                self.books(ko.utils.arrayMap(books, function(book) {
+                    var author = book.author;
+                    var authorModel = new AuthorModel(author.id, author.firstName, author.familyName);
+                    return new BookModel(book.id, book.isbn, book.name, authorModel);
+                }));
+            }
+            var getBooks = function() {
+                return booksExecutor.getBooks(getBooksOnSuccess);
+            }
+            var addBookOnSuccess = function(addedBook) {
+                getBooks();
+            }
+            self.addBook = function() {
+                self.book.author = self.selectedAuthor();
+                booksExecutor.addBook(self.book, addBookOnSuccess);
+            };
+
+            self.getAuthors = function() {
+                return authorsExecutor.getAuthors(function(authors) {
+                    self.authors(ko.utils.arrayMap(authors, function(author) {
+                        return new AuthorModel(author.id, author.firstName, author.familyName);
+                    }));
+                });
+            };
+
+            getBooks();
+            self.getAuthors();
+        }
+        $(document).ready(function() {
+            ko.applyBindings(new BookVM());
+        });
+
+
+
+
+    </script>
+</head>
+<body>
+<div data-bind="with: book">
+    <label id="book-isbn-label">ISBN</label>
+    <input id="book-isbn" name="isbn" data-bind="value: isbn">
+    <label id="book-name-label">Name</label>
+    <input id="book-name" name="book-name" data-bind="value: name">
+</div>
+<label id="book-author-id-label">Author</label>
+<select id="book-author-id"
+        data-bind="options: authors, optionsText: function(item) { return item.fullName }, value: selectedAuthor">
+</select>
+<button id="submit" data-bind="click: addBook">Add book</button>
+<div data-bind="foreach: books">
+    <span data-bind="text: bookDetails"></span>
+    <br>
+</div>
+</body>
+</html>
