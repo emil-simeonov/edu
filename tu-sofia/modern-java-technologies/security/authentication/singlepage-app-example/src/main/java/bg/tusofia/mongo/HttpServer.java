@@ -17,7 +17,7 @@ import io.vertx.ext.web.handler.*;
 import io.vertx.ext.web.sstore.LocalSessionStore;
 
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 
 public class HttpServer {
@@ -54,14 +54,20 @@ public class HttpServer {
             // index.html in this web app will require authentication with valid user
             router.route("/").handler(redirectAuthHandler);
             router.route("/index.html").handler(redirectAuthHandler);
-            // Login requests will be handled using form authentication
-            router.route("/login").handler(FormLoginHandler.create(authProvider));
+            // Login requests will be handled using form authentication and will redirect to "index.html", when successful.
+            FormLoginHandler formLoginHandler = FormLoginHandler.create(authProvider);
+            formLoginHandler.setDirectLoggedInOKURL("index.html");
+            router.route("/login").handler(formLoginHandler);
             // This is how we create new users (working with forms).
             router.post("/create-user").handler(ctx -> {
                 MultiMap form = ctx.request().formAttributes();
                 String username = form.get("username");
                 String password = form.get("password");
-                List<String> roles = Collections.singletonList("user");
+                List<String> roles = new LinkedList<>();
+                roles.add("user");
+                if ("on".equalsIgnoreCase(form.get("hasAdminRole"))) {
+                    roles.add("admin");
+                }
                 authProvider.insertUser(username, password, roles, new ArrayList<>(), id -> {
                     if (id.succeeded()) {
                         authProvider.authenticate(new JsonObject().put("username", username).put("password", password), user -> {
@@ -78,7 +84,8 @@ public class HttpServer {
                 });
             });
             router.post("/logout").handler(ctx -> executeIfUserLoggedIn(ctx, c -> {
-                ctx.setUser(null);
+                // And this is how we could log out at any point.
+                ctx.clearUser();
                 redirectTo(ctx, "loginpage.html");
             }));
 
@@ -87,7 +94,10 @@ public class HttpServer {
                     ctx.fail(res.cause());
                 } else {
                     // We will only serve this request if there is an authenticated user.
-                    executeIfUserLoggedIn(ctx, c -> jsonResponse(c, new JsonArray(res.result())));
+                    executeIfUserLoggedIn(ctx, c -> {
+                        // In addition we would like to allow this operation only for admins
+                        executeIfHasRole(ctx, "admin", res.result(), data -> jsonResponse(ctx, data));
+                    });
                 }
             }));
             router.get("/api/books").handler(ctx -> dbClient.find("books", new JsonObject(), booksResult -> {
@@ -115,20 +125,18 @@ public class HttpServer {
                 }
             }));
             // A RESTful method for adding a new book
-            router.post("/api/books").handler(ctx -> {
+            router.post("/api/books").handler(ctx -> executeIfUserLoggedIn(ctx, c -> {
                 JsonObject newBook = ctx.getBodyAsJson();
                 dbClient.save("books", newBook, res -> {
                     if (res.failed()) {
                         ctx.fail(res.cause());
                     } else {
-                        executeIfUserLoggedIn(ctx, c -> {
-                            newBook.put("author", new JsonObject().put("_id", newBook.getJsonObject("author").getValue("_id")));
-                            ctx.response().setStatusCode(201);
-                            jsonResponse(ctx, newBook);
-                        });
+                        newBook.put("author", new JsonObject().put("_id", newBook.getJsonObject("author").getValue("_id")));
+                        ctx.response().setStatusCode(201);
+                        jsonResponse(ctx, newBook);
                     }
                 });
-            });
+            }));
             // Creating the StaticHandler instance in this way binds the "webroot/index.html" to the application root path
             router.route().handler(StaticHandler.create());
             // We need to feed the SSL configuration during starting up our HTTP server.
@@ -136,6 +144,28 @@ public class HttpServer {
                     new JksOptions().setPath("ssl/sslkeystore.jks").setPassword("Abcd1234")
             );
             vertx.createHttpServer(httpServerOptions).requestHandler(router::accept).listen(4443);
+        }
+
+        /**
+         * Executes some business logic only if the currently signed user has the passed role assigned.
+         *
+         * @param ctx      routing context
+         * @param roleName name of the requested role
+         * @param data     the data that will be processed further by the authorization callback
+         * @param cb       authorization callback
+         */
+        private void executeIfHasRole(RoutingContext ctx, String roleName, List<JsonObject> data, Handler<JsonArray> cb) {
+            ctx.user().isAuthorised(MongoAuth.ROLE_PREFIX + roleName, r -> {
+                if (r.succeeded()) {
+                    if (r.result()) {
+                        cb.handle(new JsonArray(data));
+                    } else {
+                        ctx.response().setStatusCode(401).end();
+                    }
+                } else {
+                    ctx.response().setStatusCode(401).end();
+                }
+            });
         }
 
         /**
