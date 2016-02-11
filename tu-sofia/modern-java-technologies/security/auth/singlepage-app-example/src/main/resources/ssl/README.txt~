@@ -1,0 +1,15 @@
+A key store with a self-signed certificate could be generated using the "keytool", which is a command line utility provided by the JDK.
+
+Example:
+
+ keytool -genkey -alias sslKey -keystore privatekey.store
+
+The alias is the name of the private key you are going to create. The file name is also up to you.
+
+Once you have a private key in a secure store you could export a certificate with the public key to be used client-side.
+
+Example:
+
+ keytool -export -alias sslKey -file certfile.cer -keystore privatekey.store
+
+You need to provide the name of the certificate file ending with .cer file extension.
